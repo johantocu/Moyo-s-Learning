@@ -108,8 +108,23 @@ function currentVoice() {
 
 function _stop() {
   _token++;
-  clearTimeout(state._fbT); clearTimeout(state._wT);
+  clearTimeout(state._wT);
   try { speechSynthesis.cancel(); } catch { /* not available */ }
+}
+
+// Rough syllable count (vowel-group heuristic) used to time the karaoke
+// highlight — closer to real speech duration than raw character count
+// (e.g. "though" is short to say despite 6 letters).
+function estimateSyllables(word) {
+  const w = word.toLowerCase().replace(/[^a-z]/g, '');
+  if (!w) return 1;
+  const groups = w.match(/[aeiouy]+/g);
+  let n = groups ? groups.length : 1;
+  if (w.length > 2 && w.endsWith('e') && !w.endsWith('le')) n--;
+  return Math.max(1, n);
+}
+function wordDuration(word) {
+  return 90 + estimateSyllables(word) * 175;
 }
 
 function speak(p, s) {
@@ -119,8 +134,6 @@ function speak(p, s) {
   const script = state.script;
   const sn = script.parts[p].sentences[s];
   const words = sn.en.split(/\s+/);
-  const offs = []; let ci = 0;
-  for (const w of words) { const i = sn.en.indexOf(w, ci); offs.push(i); ci = i + w.length; }
   setState({ part: p, sent: s, word: -1, playing: true, pop: null });
 
   const u = new SpeechSynthesisUtterance(sn.en);
@@ -128,33 +141,29 @@ function speak(p, s) {
   u.rate = state.rate;
   u.pitch = sn.speaker === 'client' ? 0.78 : 1;
   const v = currentVoice(); if (v) u.voice = v;
-  let sawBoundary = false;
-  u.onboundary = (e) => {
-    if (tk !== _token) return;
-    if (e.name && e.name !== 'word') return;
-    sawBoundary = true; clearTimeout(state._fbT); clearTimeout(state._wT);
-    let wi = 0;
-    for (let i = 0; i < offs.length; i++) if (e.charIndex >= offs[i]) wi = i;
-    setState({ word: wi });
+
+  // Chrome/network ("online"/"natural"/"enhanced") voices fire onboundary
+  // events unreliably — often all at once, well ahead of the actual audio —
+  // so they're not a trustworthy sync source. Drive the highlight purely
+  // from a syllable-based timer instead: less "exact" but steady and
+  // predictable, which reads as better-synced than a jumpy correction.
+  const scheduleNext = (fromWi) => {
+    clearTimeout(state._wT);
+    if (fromWi >= words.length) return;
+    state._wT = setTimeout(() => {
+      if (tk !== _token) return;
+      setState({ word: fromWi });
+      scheduleNext(fromWi + 1);
+    }, wordDuration(words[fromWi]) / state.rate);
   };
+
   u.onstart = () => {
     if (tk !== _token) return;
-    state._fbT = setTimeout(() => {
-      if (tk !== _token || sawBoundary) return;
-      let wi = 0;
-      const tick = () => {
-        if (tk !== _token || sawBoundary || wi >= words.length) return;
-        setState({ word: wi });
-        const d = (140 + words[wi].length * 62) / state.rate;
-        wi++;
-        state._wT = setTimeout(tick, d);
-      };
-      tick();
-    }, 350);
+    scheduleNext(0);
   };
   u.onend = () => {
     if (tk !== _token) return;
-    clearTimeout(state._fbT); clearTimeout(state._wT);
+    clearTimeout(state._wT);
     advance(words.length);
   };
   state._utt = u;
@@ -384,6 +393,28 @@ function renderLibrary() {
   return wrap;
 }
 
+const PROMPT_MONOLOGO = `Necesito que me ayudes a preparar un texto en inglés para practicar pronunciación en una app. Es un monólogo: una sola persona hablando, sin diálogo.
+
+Por favor:
+1. Corrige cualquier error de ortografía o gramática en inglés.
+2. Divide el texto en oraciones completas y claras (una idea por oración cuando sea posible).
+3. No agregues numeración, títulos, nombres ni comentarios — devuélveme solo el texto limpio, listo para pegar tal cual.
+
+Aquí está el texto:
+[pega aquí tu texto]`;
+
+const PROMPT_DIALOGO = `Necesito que me ayudes a preparar un texto en inglés para practicar pronunciación en una app de karaoke con dos personas hablando (por ejemplo un vendedor/agente y un cliente/prospecto).
+
+Por favor:
+1. Corrige cualquier error de ortografía o gramática en inglés.
+2. Identifica qué líneas dice cada persona. Si no es obvio quién es quién, pregúntame antes de continuar.
+3. Marca cada línea de UNA de las dos personas (la que tenga menos protagonismo o esté "respondiendo", como el cliente/prospecto) con el símbolo › al inicio de la línea. Las líneas de la otra persona no llevan ningún símbolo.
+4. Cada intervención va en su propia línea (un salto de línea por cada vez que habla alguien, no juntes frases de personas distintas en la misma línea).
+5. No agregues nombres, numeración ni comentarios — devuélveme solo el texto formateado, listo para pegar tal cual.
+
+Aquí está el texto:
+[pega aquí tu texto]`;
+
 function renderNewStoryModal() {
   const overlay = h('div', { class: 'modal-overlay', onclick: (e) => { if (e.target === overlay && !state.newStoryBusy) setState({ newStoryOpen: false }); } });
 
@@ -398,12 +429,43 @@ function renderNewStoryModal() {
   const titleInput = h('input', { type: 'text', placeholder: 'Ej. The Tortoise and the Hare', class: 'field-input' });
   const textArea = h('textarea', { rows: 8, placeholder: 'Pega aquí tu historia en inglés...', class: 'field-input' });
 
+  // Prompt helper box: toggled with plain DOM (no setState/render) so the
+  // title/story the user already typed above is never wiped out.
+  const promptText = h('pre', { class: 'prompt-text' });
+  const copyBtn = h('button', { class: 'btn btn-secondary btn-sm' }, '📋 Copiar');
+  copyBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText(promptText.textContent).then(() => {
+      copyBtn.textContent = '✅ ¡Copiado!';
+      setTimeout(() => { copyBtn.textContent = '📋 Copiar'; }, 1500);
+    });
+  });
+  const promptBox = h('div', { class: 'prompt-box', style: { display: 'none' } },
+    promptText,
+    h('div', { class: 'prompt-box-actions' }, copyBtn),
+  );
+
+  let openKind = null;
+  function togglePrompt(kind, text) {
+    if (openKind === kind) { promptBox.style.display = 'none'; openKind = null; return; }
+    promptText.textContent = text;
+    promptBox.style.display = 'block';
+    openKind = kind;
+  }
+
+  const promptButtons = h('div', { class: 'prompt-buttons' },
+    h('button', { class: 'btn btn-secondary btn-sm', onclick: () => togglePrompt('mono', PROMPT_MONOLOGO) }, '💬 Prompt: Monólogo'),
+    h('button', { class: 'btn btn-secondary btn-sm', onclick: () => togglePrompt('dialogo', PROMPT_DIALOGO) }, '🗣️ Prompt: Diálogo'),
+  );
+
   const modal = h('div', { class: 'modal' },
     h('h2', {}, 'Nueva historia'),
+    h('p', { class: 'hint' }, '¿No sabes cómo darle formato al texto? Pídeselo a Claude con uno de estos prompts:'),
+    promptButtons,
+    promptBox,
     h('label', { class: 'field' }, h('span', {}, 'Título'), titleInput),
     h('label', { class: 'field' }, h('span', {}, 'Historia en inglés'), textArea),
     h('p', { class: 'hint' }, 'La app la dividirá en partes y generará automáticamente la fonética y la traducción de cada frase.'),
-    h('p', { class: 'hint' }, 'Si es un diálogo: escribe las líneas del cliente empezando con "› " (por ejemplo, "› Have you already one?"). Se mostrarán a la derecha, en cursiva, y se leerán con un tono distinto.'),
+    h('p', { class: 'hint' }, 'Si es un diálogo: las líneas de la segunda persona deben empezar con "› " (por ejemplo, "› Have you already one?"). Se mostrarán a la derecha, en cursiva, y se leerán con un tono distinto.'),
     h('div', { class: 'modal-actions' },
       h('button', { class: 'btn btn-secondary', onclick: () => setState({ newStoryOpen: false }) }, 'Cancelar'),
       h('button', { class: 'btn btn-primary', onclick: () => {
@@ -584,7 +646,7 @@ function renderFooter() {
     h('div', { class: 'footer-inner' },
       h('div', { class: 'progress-row' },
         h('div', { class: 'progress-track-wrap' },
-          h('div', { class: 'mascot', style: { left: `clamp(0px, calc(${pct}% - 16px), calc(100% - 32px))` } }, '🐣'),
+          h('img', { class: 'mascot', src: 'mascot.png', alt: '', style: { left: `clamp(0px, calc(${pct}% - 20px), calc(100% - 40px))` } }),
           h('div', { class: 'progress-track' }, h('div', { class: 'progress-fill', style: { width: pct + '%' } })),
         ),
         h('span', { class: 'progress-msg' }, `${pct}% · ${msg}`),
