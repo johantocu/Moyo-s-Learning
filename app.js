@@ -365,6 +365,10 @@ function render() {
 }
 
 function renderLibrary() {
+  const page = h('div', { class: 'library-page' },
+    h('img', { class: 'hero-mascot', src: 'stitch-hero.png', alt: '' })
+  );
+
   const wrap = h('div', { class: 'library' });
   wrap.appendChild(h('header', { class: 'library-header' },
     h('h1', {}, "🎤 Moyo's Learning"),
@@ -390,7 +394,8 @@ function renderLibrary() {
   wrap.appendChild(grid);
 
   if (state.newStoryOpen) wrap.appendChild(renderNewStoryModal());
-  return wrap;
+  page.appendChild(wrap);
+  return page;
 }
 
 const PROMPT_MONOLOGO = `Necesito que me ayudes a preparar un texto en inglés para practicar pronunciación en una app. Es un monólogo: una sola persona hablando, sin diálogo.

@@ -49,9 +49,27 @@ button { font-family: inherit; }
 
 /* ---------- library ---------- */
 
-.library { max-width: 900px; margin: 0 auto; padding: 32px 20px 60px; }
+.library-page { position: relative; min-height: 100vh; overflow: hidden; }
+
+.hero-mascot {
+  position: absolute;
+  z-index: 0;
+  right: -18%;
+  bottom: -16%;
+  width: min(880px, 95vw);
+  transform: rotate(-9deg);
+  pointer-events: none;
+  user-select: none;
+  filter: drop-shadow(0 20px 40px rgba(15,71,86,0.18));
+}
+
+.library { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 32px 20px 60px; }
 .library-header h1 { margin: 0 0 6px; font-size: 1.8rem; }
 .library-header p { margin: 0 0 28px; color: var(--muted); }
+
+@media (max-width: 640px) {
+  .hero-mascot { width: min(460px, 82vw); right: -18%; bottom: -10%; opacity: 0.75; }
+}
 
 .library-grid {
   display: grid;
