@@ -26,7 +26,7 @@ const state = {
   scripts: loadScripts(),
   script: null,
   part: 0, sent: 0, word: -1, playing: false, loop: false, rate: 1,
-  showPron: true, showEs: true, playAll: false, voiceURI: '',
+  showPron: true, showEs: true, playAll: false,
   pop: null, fluid: false, reads: 0, pulse: false,
   testMode: false, testRunning: false, testMs: 0, recording: false, micBlocked: false,
   attempts: [], micState: 'idle', playingAtt: null,
@@ -87,13 +87,17 @@ function enVoices() {
   return speechSynthesis.getVoices().filter(v => v.lang && v.lang.replace('_', '-').toLowerCase().indexOf('en') === 0);
 }
 
+// Fixed voice preference (not user-changeable): Google UK English Male,
+// falling back to the female Google UK voice, then to the best-sounding
+// voice available if neither is installed on this machine (the "online"
+// Google voices can silently disappear between sessions/devices).
 function currentVoice() {
   const vs = enVoices();
   if (!vs.length) return null;
-  if (state.voiceURI) {
-    const picked = vs.find(v => v.voiceURI === state.voiceURI);
-    if (picked) return picked;
-  }
+  const male = vs.find(v => /google uk english male/i.test(v.name));
+  if (male) return male;
+  const female = vs.find(v => /google uk english female/i.test(v.name));
+  if (female) return female;
   const score = v => {
     const n = (v.name + ' ' + v.voiceURI).toLowerCase();
     let s = 0;
@@ -635,18 +639,6 @@ function renderFooter() {
     onclick: () => { setState({ rate: r }); if (state.playing) speak(state.part, state.sent); },
   }, r + '×'));
 
-  const voices = enVoices();
-  const cur = currentVoice();
-  const voiceSelect = h('select', {
-    class: 'voice-select',
-    onchange: (e) => { setState({ voiceURI: e.target.value }); if (state.playing) speak(state.part, state.sent); },
-  });
-  voices.forEach(v => {
-    const opt = h('option', { value: v.voiceURI }, `${v.name} (${v.lang})`);
-    if (cur && cur.voiceURI === v.voiceURI) opt.setAttribute('selected', 'selected');
-    voiceSelect.appendChild(opt);
-  });
-
   return h('div', { class: 'footer' },
     h('div', { class: 'footer-inner' },
       h('div', { class: 'progress-row' },
@@ -680,10 +672,6 @@ function renderFooter() {
           class: 'btn-chip-dark' + (state.showEs ? ' btn-chip-dark-active' : ''),
           onclick: () => setState({ showEs: !state.showEs }),
         }, state.showEs ? 'Traducción: sí' : 'Traducción: no'),
-      ),
-      h('div', { class: 'voice-row' },
-        h('span', {}, '🗣 Voz:'),
-        voiceSelect,
       ),
     )
   );
