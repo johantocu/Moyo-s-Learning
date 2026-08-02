@@ -322,6 +322,7 @@ button { font-family: inherit; }
 .attempt-del { width: 38px; height: 38px; border-radius: 10px; border: 1px solid #F0C4BC; background: #FFF2EF; color: var(--danger); font-size: 15px; cursor: pointer; }
 
 .all-parts { margin-top: 18px; display: flex; flex-direction: column; gap: 14px; }
+.all-parts-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .all-part-card { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; }
 .all-part-label { font-size: 12px; font-weight: 700; color: var(--orange-dark); text-transform: uppercase; letter-spacing: 0.06em; }
 .all-part-text { font-size: 20px; font-weight: 600; line-height: 1.5; margin-top: 6px; }

@@ -19,6 +19,18 @@ function h(tag, props, ...children) {
 
 const INK = '#143644', ORANGE = '#17A8C4', GREEN = '#0FA089', HILITE = '#4FD4E8', CLIENT_INK = '#6B4A9C';
 
+// Main English accents to try. `hints` matches voice *names* (works across
+// Chrome's "Google X English Y" voices and each OS's named system voices);
+// falling back to the voice's `lang` tag when no name matches.
+const ACCENTS = [
+  { code: 'en-GB', flag: '🇬🇧', label: 'Británico', hints: /google uk english|british|\bdaniel\b/i },
+  { code: 'en-US', flag: '🇺🇸', label: 'Estadounidense', hints: /google us english|\bsamantha\b|\balex\b/i },
+  { code: 'en-IE', flag: '🇮🇪', label: 'Irlandés', hints: /irish|\bmoira\b/i },
+  { code: 'en-IN', flag: '🇮🇳', label: 'Indio', hints: /india|\brishi\b|\bveena\b/i },
+  { code: 'en-AU', flag: '🇦🇺', label: 'Australiano', hints: /australia|\bkaren\b/i },
+];
+const ACCENT_STORAGE_KEY = 'moyos-learning-accent-v1';
+
 // ---------- state ----------
 
 const state = {
@@ -27,6 +39,7 @@ const state = {
   script: null,
   part: 0, sent: 0, word: -1, playing: false, loop: false, rate: 1,
   showPron: true, showEs: true, playAll: false,
+  accent: localStorage.getItem(ACCENT_STORAGE_KEY) || 'en-GB',
   pop: null, fluid: false, reads: 0, pulse: false,
   testMode: false, testRunning: false, testMs: 0, recording: false, micBlocked: false,
   attempts: [], micState: 'idle', playingAtt: null,
@@ -87,13 +100,28 @@ function enVoices() {
   return speechSynthesis.getVoices().filter(v => v.lang && v.lang.replace('_', '-').toLowerCase().indexOf('en') === 0);
 }
 
-// Fixed voice preference (not user-changeable): Google UK English Male,
-// falling back to the female Google UK voice, then to the best-sounding
-// voice available if neither is installed on this machine (the "online"
-// Google voices can silently disappear between sessions/devices).
+// Finds the best voice for a given accent by name first (works across
+// Chrome's "Google X English Y" voices and each OS's named system voices),
+// falling back to matching the voice's own `lang` tag.
+function findVoiceForAccent(accentDef) {
+  const vs = enVoices();
+  if (!vs.length) return null;
+  const byHint = vs.find(v => accentDef.hints.test(v.name));
+  if (byHint) return byHint;
+  const wantLang = accentDef.code.toLowerCase();
+  return vs.find(v => v.lang.replace('_', '-').toLowerCase() === wantLang) || null;
+}
+
+// Voice picked by the selected accent (remembered in localStorage). If
+// that accent isn't installed on this device, falls back to Google UK
+// English Male/Female, then to the best-sounding voice available at all —
+// "online" Google voices can silently disappear between sessions/devices.
 function currentVoice() {
   const vs = enVoices();
   if (!vs.length) return null;
+  const accentDef = ACCENTS.find(a => a.code === state.accent) || ACCENTS[0];
+  const preferred = findVoiceForAccent(accentDef);
+  if (preferred) return preferred;
   const male = vs.find(v => /google uk english male/i.test(v.name));
   if (male) return male;
   const female = vs.find(v => /google uk english female/i.test(v.name));
@@ -108,6 +136,12 @@ function currentVoice() {
     return s;
   };
   return vs.slice().sort((a, b) => score(b) - score(a))[0];
+}
+
+function setAccent(code) {
+  localStorage.setItem(ACCENT_STORAGE_KEY, code);
+  setState({ accent: code });
+  if (state.playing) speak(state.part, state.sent);
 }
 
 function _stop() {
@@ -673,7 +707,23 @@ function renderFooter() {
           onclick: () => setState({ showEs: !state.showEs }),
         }, state.showEs ? 'Traducción: sí' : 'Traducción: no'),
       ),
+      renderAccentRow(),
     )
+  );
+}
+
+function renderAccentRow() {
+  return h('div', { class: 'accent-row' },
+    h('span', { class: 'accent-row-label' }, 'Acento:'),
+    ...ACCENTS.map(a => {
+      const available = !!findVoiceForAccent(a);
+      const active = state.accent === a.code;
+      return h('button', {
+        class: 'accent-btn' + (active ? ' accent-btn-active' : '') + (!available ? ' accent-btn-unavailable' : ''),
+        title: available ? a.label : `${a.label} — no disponible en este dispositivo, usará otra voz`,
+        onclick: () => setAccent(a.code),
+      }, a.flag);
+    })
   );
 }
 
@@ -742,6 +792,18 @@ function renderTestModal() {
   }
 
   const allParts = h('div', { class: 'all-parts' });
+  const fullText = script.parts.map(pt => pt.sentences.map(x => x.en).join(' ')).join('\n\n');
+  const copyAllBtn = h('button', { class: 'btn btn-secondary btn-sm' }, '📋 Copiar todo el texto');
+  copyAllBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText(fullText).then(() => {
+      copyAllBtn.textContent = '✅ ¡Copiado!';
+      setTimeout(() => { copyAllBtn.textContent = '📋 Copiar todo el texto'; }, 1500);
+    });
+  });
+  allParts.appendChild(h('div', { class: 'all-parts-head' },
+    h('div', { class: 'part-label' }, 'Guion completo'),
+    copyAllBtn,
+  ));
   script.parts.forEach(pt => {
     allParts.appendChild(h('div', { class: 'all-part-card' },
       h('div', { class: 'all-part-label' }, `Parte ${pt.label} · ${pt.title}`),
