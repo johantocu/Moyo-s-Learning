@@ -52,29 +52,28 @@ const DEMO_SCRIPT = {
   ]
 };
 
-// ---------- Story (guion) storage: demo + user-created, in localStorage ----------
+// ---------- Story (guion) storage: demo (built-in) + user-created (synced
+// via /api/scripts, backed by Vercel KV, so every device sees the same list) ----------
 
-const SCRIPTS_KEY = 'moyos-learning-scripts-v1';
-
-function loadScripts() {
-  const raw = localStorage.getItem(SCRIPTS_KEY);
-  const custom = raw ? JSON.parse(raw) : [];
+async function loadScripts() {
+  const res = await fetch('/api/scripts');
+  if (!res.ok) throw new Error('Failed to load scripts');
+  const custom = await res.json();
   return [DEMO_SCRIPT, ...custom];
 }
 
-function saveCustomScript(script) {
-  const raw = localStorage.getItem(SCRIPTS_KEY);
-  const custom = raw ? JSON.parse(raw) : [];
-  const idx = custom.findIndex(s => s.id === script.id);
-  if (idx >= 0) custom[idx] = script;
-  else custom.push(script);
-  localStorage.setItem(SCRIPTS_KEY, JSON.stringify(custom));
+async function saveCustomScript(script) {
+  const res = await fetch('/api/scripts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(script),
+  });
+  if (!res.ok) throw new Error('Failed to save script');
 }
 
-function deleteCustomScript(id) {
-  const raw = localStorage.getItem(SCRIPTS_KEY);
-  const custom = raw ? JSON.parse(raw) : [];
-  localStorage.setItem(SCRIPTS_KEY, JSON.stringify(custom.filter(s => s.id !== id)));
+async function deleteCustomScript(id) {
+  const res = await fetch(`/api/scripts?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error('Failed to delete script');
 }
 
 // A "card" (one sentence shown on screen) reads best around 4-6 lines.

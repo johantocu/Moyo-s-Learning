@@ -35,7 +35,7 @@ const ACCENT_STORAGE_KEY = 'moyos-learning-accent-v1';
 
 const state = {
   view: 'library', // 'library' | 'player'
-  scripts: loadScripts(),
+  scripts: [DEMO_SCRIPT],
   script: null,
   part: 0, sent: 0, word: -1, playing: false, loop: false, rate: 1,
   showPron: true, showEs: true, playAll: false,
@@ -55,9 +55,18 @@ function setState(patch) {
 
 // ---------- library (choose / create a story) ----------
 
+async function refreshScripts() {
+  try {
+    setState({ scripts: await loadScripts() });
+  } catch (e) {
+    alert('No se pudieron cargar las historias desde la nube. Revisa tu conexión.');
+  }
+}
+
 function openLibrary() {
   _stop();
-  setState({ view: 'library', scripts: loadScripts(), newStoryOpen: false });
+  setState({ view: 'library', newStoryOpen: false });
+  refreshScripts();
 }
 
 async function openScript(script) {
@@ -81,16 +90,27 @@ async function createStory(title, text) {
     sn.es = es || '(no disponible)';
   }
 
-  saveCustomScript(script);
-  setState({ newStoryBusy: false, newStoryOpen: false, scripts: loadScripts() });
+  try {
+    await saveCustomScript(script);
+  } catch (e) {
+    setState({ newStoryBusy: false });
+    alert('No se pudo guardar la historia en la nube. Revisa tu conexión e intenta de nuevo.');
+    return;
+  }
+  setState({ newStoryBusy: false, newStoryOpen: false, scripts: await loadScripts() });
   openScript(script);
 }
 
-function removeStory(id, evt) {
+async function removeStory(id, evt) {
   evt.stopPropagation();
   if (!confirm('¿Eliminar esta historia?')) return;
-  deleteCustomScript(id);
-  setState({ scripts: loadScripts() });
+  try {
+    await deleteCustomScript(id);
+  } catch (e) {
+    alert('No se pudo eliminar la historia en la nube. Revisa tu conexión e intenta de nuevo.');
+    return;
+  }
+  setState({ scripts: await loadScripts() });
 }
 
 // ---------- speech synthesis ----------
@@ -817,3 +837,4 @@ function renderTestModal() {
 }
 
 render();
+refreshScripts();

@@ -49,7 +49,7 @@ button { font-family: inherit; }
 
 /* ---------- library ---------- */
 
-.library-page { position: relative; min-height: 100vh; overflow: hidden; }
+.library-page { position: relative; min-height: 100vh; overflow-x: hidden; }
 
 .hero-mascot {
   position: absolute;
@@ -68,7 +68,13 @@ button { font-family: inherit; }
 .library-header p { margin: 0 0 28px; color: var(--muted); }
 
 @media (max-width: 640px) {
-  .hero-mascot { width: min(460px, 82vw); right: -18%; bottom: -10%; opacity: 0.75; }
+  .library-page { min-height: 0; display: flex; flex-direction: column; }
+  .library { order: 1; }
+  .hero-mascot {
+    position: relative; order: 2; z-index: 0;
+    width: min(280px, 62vw); transform: rotate(-9deg);
+    margin: 24px 0 0 auto; opacity: 0.8;
+  }
 }
 
 .library-grid {
