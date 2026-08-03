@@ -19,6 +19,13 @@ function h(tag, props, ...children) {
 
 const INK = '#143644', ORANGE = '#17A8C4', GREEN = '#0FA089', HILITE = '#4FD4E8', CLIENT_INK = '#6B4A9C';
 
+// Small colored pill for a sentence's "tonalidad de persuasión" (see tones.js).
+function toneBadge(toneCode) {
+  const tone = toneCode && TONES[toneCode];
+  if (!tone) return null;
+  return h('span', { class: 'tone-badge', style: { background: tone.color }, title: tone.tip }, tone.es);
+}
+
 // Main English accents to try. `hints` matches voice *names* (works across
 // Chrome's "Google X English Y" voices and each OS's named system voices);
 // falling back to the voice's `lang` tag when no name matches.
@@ -42,7 +49,7 @@ const state = {
   accent: localStorage.getItem(ACCENT_STORAGE_KEY) || 'en-GB',
   pop: null, fluid: false, reads: 0, pulse: false,
   testMode: false, testRunning: false, testMs: 0, recording: false, micBlocked: false,
-  attempts: [], micState: 'idle', playingAtt: null,
+  attempts: [], micState: 'idle', playingAtt: null, toneLegendOpen: false,
   newStoryOpen: false, newStoryBusy: false, newStoryProgress: '',
 };
 
@@ -89,6 +96,19 @@ async function createStory(title, text) {
     sn.pron = pron;
     sn.es = es || '(no disponible)';
   }
+
+  setState({ newStoryProgress: 'Detectando tonalidades de persuasión...' });
+  try {
+    const toneRes = await fetch('/api/tone-tag', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sentences: allSentences.map(s => s.en) }),
+    });
+    if (toneRes.ok) {
+      const { tones } = await toneRes.json();
+      allSentences.forEach((sn, i) => { if (tones[i]) sn.tone = tones[i]; });
+    }
+  } catch (e) { /* non-critical: story still saves without tone tags */ }
 
   try {
     await saveCustomScript(script);
@@ -308,6 +328,63 @@ function fmtMs(ms) {
   return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0') + '.' + Math.floor((ms % 1000) / 100);
 }
 
+// ---------- live audio feedback (energy / pitch / pace) — pure DSP helpers ----------
+// Kept dependency-free and framework-free on purpose so they can be unit
+// tested in plain Node with synthetic signals, no browser required.
+
+function computeRMS(buf) {
+  let sum = 0;
+  for (let i = 0; i < buf.length; i++) sum += buf[i] * buf[i];
+  return Math.sqrt(sum / buf.length);
+}
+
+// Autocorrelation pitch estimate, restricted to the human voice fundamental
+// range (~80–350 Hz) so the lag search stays cheap enough to run live every
+// ~200ms. Returns -1 when the frame is too quiet to have a reliable pitch.
+function estimatePitch(buf, sampleRate) {
+  if (computeRMS(buf) < 0.01) return -1;
+  const minLag = Math.floor(sampleRate / 350);
+  const maxLag = Math.min(Math.floor(sampleRate / 80), buf.length - 1);
+  let bestLag = -1, bestCorr = 0;
+  for (let lag = minLag; lag <= maxLag; lag++) {
+    let corr = 0;
+    for (let i = 0; i < buf.length - lag; i++) corr += buf[i] * buf[i + lag];
+    if (corr > bestCorr) { bestCorr = corr; bestLag = lag; }
+  }
+  return bestLag > 0 ? sampleRate / bestLag : -1;
+}
+
+function bucketize(value, lo, hi) {
+  if (value < lo) return 'baja';
+  if (value < hi) return 'media';
+  return 'alta';
+}
+
+// Summarizes the samples collected during a test recording into the three
+// short, encouraging-not-scolding labels shown per attempt.
+function computeAttemptFeedback(ms) {
+  const energySamples = state._energySamples || [];
+  if (!energySamples.length) return null;
+
+  const avgEnergy = energySamples.reduce((a, b) => a + b, 0) / energySamples.length;
+  const energy = bucketize(avgEnergy, 0.02, 0.06);
+
+  const pitchSamples = state._pitchSamples || [];
+  let pitchVariation = 'baja';
+  if (pitchSamples.length >= 3) {
+    const mean = pitchSamples.reduce((a, b) => a + b, 0) / pitchSamples.length;
+    const variance = pitchSamples.reduce((a, b) => a + (b - mean) ** 2, 0) / pitchSamples.length;
+    pitchVariation = bucketize(Math.sqrt(variance), 15, 40);
+  }
+
+  const totalWords = state.script.parts.flatMap(p => p.sentences)
+    .reduce((a, s) => a + s.en.split(/\s+/).filter(Boolean).length, 0);
+  const wpm = ms > 0 ? totalWords / (ms / 1000 / 60) : 0;
+  const pace = wpm < 100 ? 'lento' : (wpm > 170 ? 'rápido' : 'bueno');
+
+  return { energy, pitchVariation, pace };
+}
+
 function startTest() {
   _stop();
   state._t0 = Date.now();
@@ -322,15 +399,37 @@ function startTest() {
       state._rec.ondataavailable = e => state._chunks.push(e.data);
       state._rec.start();
       setState({ recording: true });
+
+      try {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        state._actx = new Ctx();
+        const source = state._actx.createMediaStreamSource(stream);
+        const analyser = state._actx.createAnalyser();
+        analyser.fftSize = 2048;
+        source.connect(analyser);
+        state._energySamples = [];
+        state._pitchSamples = [];
+        const buf = new Float32Array(analyser.fftSize);
+        clearInterval(state._analysisTi);
+        state._analysisTi = setInterval(() => {
+          analyser.getFloatTimeDomainData(buf);
+          state._energySamples.push(computeRMS(buf));
+          const pitch = estimatePitch(buf, state._actx.sampleRate);
+          if (pitch > 0) state._pitchSamples.push(pitch);
+        }, 200);
+      } catch { /* Web Audio unavailable — attempt just won't get feedback */ }
     }).catch(() => setState({ recording: false, micBlocked: true }));
   }
 }
 
 function endTest() {
   clearInterval(state._ti);
+  clearInterval(state._analysisTi);
   const ms = Date.now() - state._t0;
+  const feedback = computeAttemptFeedback(ms);
+  if (state._actx) { state._actx.close().catch(() => {}); state._actx = null; }
   const finish = async (blob) => {
-    await saveAttempt(state.script.id, ms, blob || null);
+    await saveAttempt(state.script.id, ms, blob || null, feedback);
     const attempts = await loadAttempts(state.script.id);
     setState({ testRunning: false, recording: false, testMs: ms, attempts });
   };
@@ -593,6 +692,7 @@ function renderMain() {
       h('div', { class: 'part-label' }, `Parte ${part.label}`),
       h('div', { class: 'part-title' }, part.title),
       h('div', { class: 'part-status' }, `Frase ${state.sent + 1} de ${part.sentences.length}${state.playAll ? ' · reproduciendo todo el guion' : ''}`),
+      toneBadge(part.sentences[state.sent] && part.sentences[state.sent].tone),
     ),
     h('button', { class: 'btn btn-secondary', onclick: () => setState({ fluid: !state.fluid }) },
       state.fluid ? '📄 Vista fluida' : '🧩 Por frases')
@@ -807,6 +907,7 @@ function renderTestModal() {
       }
       row.appendChild(h('button', { class: 'attempt-del', onclick: (e) => { e.stopPropagation(); removeAttempt(idx); } }, '🗑'));
       list.appendChild(row);
+      if (a.feedback) list.appendChild(renderAttemptFeedback(a.feedback));
     });
     inner.appendChild(list);
   }
@@ -822,18 +923,52 @@ function renderTestModal() {
   });
   allParts.appendChild(h('div', { class: 'all-parts-head' },
     h('div', { class: 'part-label' }, 'Guion completo'),
-    copyAllBtn,
+    h('div', { class: 'all-parts-head-actions' },
+      h('button', { class: 'btn btn-secondary btn-sm', onclick: () => setState({ toneLegendOpen: !state.toneLegendOpen }) }, 'ℹ️ Tonalidades'),
+      copyAllBtn,
+    ),
   ));
+  if (state.toneLegendOpen) allParts.appendChild(renderToneLegend());
   script.parts.forEach(pt => {
-    allParts.appendChild(h('div', { class: 'all-part-card' },
+    const card = h('div', { class: 'all-part-card' },
       h('div', { class: 'all-part-label' }, `Parte ${pt.label} · ${pt.title}`),
-      h('div', { class: 'all-part-text' }, pt.sentences.map(x => x.en).join(' ')),
-    ));
+    );
+    pt.sentences.forEach(sn => {
+      card.appendChild(h('div', { class: 'all-part-sentence' },
+        toneBadge(sn.tone),
+        h('span', { class: 'all-part-text' }, sn.en),
+      ));
+    });
+    allParts.appendChild(card);
   });
   inner.appendChild(allParts);
 
   overlay.appendChild(inner);
   return overlay;
+}
+
+function renderToneLegend() {
+  return h('div', { class: 'tone-legend' },
+    TONE_ORDER.map(code => {
+      const tone = TONES[code];
+      return h('div', { class: 'tone-legend-row' },
+        h('span', { class: 'tone-badge', style: { background: tone.color } }, tone.es),
+        h('span', { class: 'tone-legend-tip' }, tone.tip),
+      );
+    })
+  );
+}
+
+function renderAttemptFeedback(fb) {
+  const energyGood = fb.energy === 'alta' || fb.energy === 'media';
+  const pitchGood = fb.pitchVariation === 'alta' || fb.pitchVariation === 'media';
+  const paceGood = fb.pace === 'bueno';
+  return h('div', { class: 'attempt-feedback' },
+    h('span', { class: 'fb-badge ' + (energyGood ? 'fb-good' : 'fb-warn') }, `🔊 Energía: ${fb.energy}`),
+    h('span', { class: 'fb-badge ' + (pitchGood ? 'fb-good' : 'fb-warn') },
+      `🎵 Variación de tono: ${fb.pitchVariation}${pitchGood ? '' : ' — sonó algo plano'}`),
+    h('span', { class: 'fb-badge ' + (paceGood ? 'fb-good' : 'fb-warn') }, `🏃 Ritmo: ${fb.pace}`),
+  );
 }
 
 render();

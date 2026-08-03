@@ -5,49 +5,49 @@ const DEMO_SCRIPT = {
   title: 'Guion de ventas · inglés',
   parts: [
     { label: '1', title: 'Apertura', sentences: [
-      { en: 'How long have you already considered opening a company abroad?', pron: 'jáu long jav yu ol-rédi kon-sí-derd óu-pe-ning a kám-pa-ni a-bród?', es: '¿Hace cuánto tiempo viene considerando abrir una empresa en el extranjero?' },
+      { en: 'How long have you already considered opening a company abroad?', pron: 'jáu long jav yu ol-rédi kon-sí-derd óu-pe-ning a kám-pa-ni a-bród?', es: '¿Hace cuánto tiempo viene considerando abrir una empresa en el extranjero?', tone: 'curiosity' },
       { en: 'Have you already one?', pron: 'jav yu ol-rédi uán?', es: '¿Ya tiene una?' }
     ]},
     { label: '2', title: 'El negocio', sentences: [
-      { en: 'What business are you in?', pron: 'uát bís-nes ar yu in?', es: '¿A qué negocio se dedica?' }
+      { en: 'What business are you in?', pron: 'uát bís-nes ar yu in?', es: '¿A qué negocio se dedica?', tone: 'curiosity' }
     ]},
     { label: '3', title: 'Nacionalidad y residencia', sentences: [
-      { en: 'Which nationality do you have?', pron: 'uích na-sho-ná-li-ti du yu jav?', es: '¿Qué nacionalidad tiene?' },
-      { en: 'And which residency?', pron: 'and uích ré-si-den-si?', es: '¿Y qué residencia?' }
+      { en: 'Which nationality do you have?', pron: 'uích na-sho-ná-li-ti du yu jav?', es: '¿Qué nacionalidad tiene?', tone: 'curiosity' },
+      { en: 'And which residency?', pron: 'and uích ré-si-den-si?', es: '¿Y qué residencia?', tone: 'curiosity' }
     ]},
     { label: '4', title: 'Rentabilidad', sentences: [
-      { en: 'It looks your business is profitable.', pron: 'it luks yor bís-nes is pró-fi-ta-bol.', es: 'Parece que su negocio es rentable.' },
-      { en: 'If transferable profits are at least 100,000 Euro per year, then tax savings are many times higher than any costs.', pron: 'if trans-fé-ra-bol pró-fits ar at líst uán jándred záusand yúro per yíer, den taks séi-vings ar méni táims jái-er dan éni costs.', es: 'Si las ganancias transferibles son de al menos 100.000 euros al año, el ahorro en impuestos es muchas veces mayor que cualquier costo.' },
-      { en: 'How do you expect it will go this year?', pron: 'jáu du yu eks-pékt it uil góu dis yíer?', es: '¿Cómo espera que le vaya este año?' }
+      { en: 'It looks your business is profitable.', pron: 'it luks yor bís-nes is pró-fi-ta-bol.', es: 'Parece que su negocio es rentable.', tone: 'implied' },
+      { en: 'If transferable profits are at least 100,000 Euro per year, then tax savings are many times higher than any costs.', pron: 'if trans-fé-ra-bol pró-fits ar at líst uán jándred záusand yúro per yíer, den taks séi-vings ar méni táims jái-er dan éni costs.', es: 'Si las ganancias transferibles son de al menos 100.000 euros al año, el ahorro en impuestos es muchas veces mayor que cualquier costo.', tone: 'reasonable' },
+      { en: 'How do you expect it will go this year?', pron: 'jáu du yu eks-pékt it uil góu dis yíer?', es: '¿Cómo espera que le vaya este año?', tone: 'curiosity' }
     ]},
     { label: '4B', title: 'Si no califica', sentences: [
-      { en: 'It seems this is too early now;', pron: 'it síms dis is tu érli náu;', es: 'Parece que todavía es muy pronto;' },
-      { en: 'let me contact you in a few months to see how the situation is then, so we are available for you when you benefit.', pron: 'let mi kóntakt yu in a fiú monzs tu si jáu de si-chu-éi-shon is den, so uí ar a-véi-la-bol for yu uén yu béne-fit.', es: 'permítame contactarlo en unos meses para ver cómo está la situación entonces, y así estar disponibles para usted cuando le convenga.' }
+      { en: 'It seems this is too early now;', pron: 'it síms dis is tu érli náu;', es: 'Parece que todavía es muy pronto;', tone: 'reasonable' },
+      { en: 'let me contact you in a few months to see how the situation is then, so we are available for you when you benefit.', pron: 'let mi kóntakt yu in a fiú monzs tu si jáu de si-chu-éi-shon is den, so uí ar a-véi-la-bol for yu uén yu béne-fit.', es: 'permítame contactarlo en unos meses para ver cómo está la situación entonces, y así estar disponibles para usted cuando le convenga.', tone: 'sincerity' }
     ]},
     { label: '5', title: 'Impuestos hasta ahora', sentences: [
-      { en: 'Having profits, what did you do until now to help lowering the tax burden?', pron: 'jáving prófits, uát did yu du antíl náu tu jelp ló-ue-ring de taks bérden?', es: 'Teniendo ganancias, ¿qué ha hecho hasta ahora para reducir la carga fiscal?' },
-      { en: 'What was the reason not to act earlier?', pron: 'uát uós de ríson not tu akt érli-er?', es: '¿Cuál fue la razón para no actuar antes?' },
-      { en: 'What did your tax advisor recommend?', pron: 'uát did yor taks ad-vái-sor re-ko-ménd?', es: '¿Qué le recomendó su asesor fiscal?' }
+      { en: 'Having profits, what did you do until now to help lowering the tax burden?', pron: 'jáving prófits, uát did yu du antíl náu tu jelp ló-ue-ring de taks bérden?', es: 'Teniendo ganancias, ¿qué ha hecho hasta ahora para reducir la carga fiscal?', tone: 'curiosity' },
+      { en: 'What was the reason not to act earlier?', pron: 'uát uós de ríson not tu akt érli-er?', es: '¿Cuál fue la razón para no actuar antes?', tone: 'curiosity' },
+      { en: 'What did your tax advisor recommend?', pron: 'uát did yor taks ad-vái-sor re-ko-ménd?', es: '¿Qué le recomendó su asesor fiscal?', tone: 'curiosity' }
     ]},
     { label: '6', title: 'Transición a la venta', sentences: [
-      { en: 'Based on what you told me, there are certainly good solutions.', pron: 'béisd on uát yu tóuld mi, der ar sértenli gud so-lú-shons.', es: 'Según lo que me ha contado, sin duda hay buenas soluciones.' },
-      { en: 'As I told you, the reason for this call was to clarify if we can help you.', pron: 'as ái tóuld yu, de ríson for dis col uós tu klárifai if uí kan jelp yu.', es: 'Como le dije, el motivo de esta llamada era aclarar si podemos ayudarle.' },
-      { en: 'This is the case.', pron: 'dis is de kéis.', es: 'Y así es.' }
+      { en: 'Based on what you told me, there are certainly good solutions.', pron: 'béisd on uát yu tóuld mi, der ar sértenli gud so-lú-shons.', es: 'Según lo que me ha contado, sin duda hay buenas soluciones.', tone: 'certainty' },
+      { en: 'As I told you, the reason for this call was to clarify if we can help you.', pron: 'as ái tóuld yu, de ríson for dis col uós tu klárifai if uí kan jelp yu.', es: 'Como le dije, el motivo de esta llamada era aclarar si podemos ayudarle.', tone: 'sincerity' },
+      { en: 'This is the case.', pron: 'dis is de kéis.', es: 'Y así es.', tone: 'certainty' }
     ]},
     { label: '7', title: 'La cita', sentences: [
-      { en: 'So let me arrange an appointment with our owner.', pron: 'so let mi a-réinch an a-póint-ment uiz áur óuner.', es: 'Entonces permítame agendar una cita con nuestro dueño.' },
-      { en: 'He is an experienced businessman and tax expert.', pron: 'ji is an eks-pí-riensd bísnes-man and taks ékspert.', es: 'Es un empresario con experiencia y experto en impuestos.' },
-      { en: 'He will discuss your situation and recommend not only a solution but also the steps of how to get there.', pron: 'ji uil diskás yor si-chu-éi-shon and re-ko-ménd not óunli a so-lú-shon bat ólso de steps of jáu tu guet der.', es: 'Analizará su situación y le recomendará no solo una solución, sino también los pasos para llegar a ella.' },
-      { en: 'And if you can benefit only half as much as most of our clients, you will be very surprised.', pron: 'and if yu kan bénefit óunli jaf as mach as móust of áur klái-ents, yu uil bi véri sor-práisd.', es: 'Y si usted se beneficia aunque sea la mitad de lo que se benefician la mayoría de nuestros clientes, quedará muy sorprendido.' }
+      { en: 'So let me arrange an appointment with our owner.', pron: 'so let mi a-réinch an a-póint-ment uiz áur óuner.', es: 'Entonces permítame agendar una cita con nuestro dueño.', tone: 'implied' },
+      { en: 'He is an experienced businessman and tax expert.', pron: 'ji is an eks-pí-riensd bísnes-man and taks ékspert.', es: 'Es un empresario con experiencia y experto en impuestos.', tone: 'certainty' },
+      { en: 'He will discuss your situation and recommend not only a solution but also the steps of how to get there.', pron: 'ji uil diskás yor si-chu-éi-shon and re-ko-ménd not óunli a so-lú-shon bat ólso de steps of jáu tu guet der.', es: 'Analizará su situación y le recomendará no solo una solución, sino también los pasos para llegar a ella.', tone: 'certainty' },
+      { en: 'And if you can benefit only half as much as most of our clients, you will be very surprised.', pron: 'and if yu kan bénefit óunli jaf as mach as móust of áur klái-ents, yu uil bi véri sor-práisd.', es: 'Y si usted se beneficia aunque sea la mitad de lo que se benefician la mayoría de nuestros clientes, quedará muy sorprendido.', tone: 'mystery' }
     ]},
     { label: '8', title: 'Calendario y WhatsApp', sentences: [
       { en: 'Let me look at the calendar, I can book an appointment on Monday or Tuesday.', pron: 'let mi luk at de kálendar, ái kan buk an a-póintment on mándei or tiúsdei.', es: 'Déjeme ver el calendario, puedo agendar una cita el lunes o el martes.' },
       { en: 'I confirm on WhatsApp.', pron: 'ái kon-férm on uáts-ap.', es: 'Se lo confirmo por WhatsApp.' },
-      { en: 'Mr. Schwarz will contact you on WhatsApp, too, because almost everyone uses it, the phone is always available and it allows to exchange messages.', pron: 'míster shuárts uil kóntakt yu on uáts-ap tu, bikós ólmoust évri-uan yúses it, de fóun is ólueis a-véi-la-bol and it aláus tu eks-chéinch méseyes.', es: 'El señor Schwarz también lo contactará por WhatsApp, porque casi todo el mundo lo usa, el teléfono siempre está disponible y permite intercambiar mensajes.' }
+      { en: 'Mr. Schwarz will contact you on WhatsApp, too, because almost everyone uses it, the phone is always available and it allows to exchange messages.', pron: 'míster shuárts uil kóntakt yu on uáts-ap tu, bikós ólmoust évri-uan yúses it, de fóun is ólueis a-véi-la-bol and it aláus tu eks-chéinch méseyes.', es: 'El señor Schwarz también lo contactará por WhatsApp, porque casi todo el mundo lo usa, el teléfono siempre está disponible y permite intercambiar mensajes.', tone: 'reasonable' }
     ]},
     { label: '9', title: 'Favor personal (cierre)', sentences: [
-      { en: 'Please do me one more personal favor: if you happen to miss your appointment at short notice, please text me at this number.', pron: 'plis du mi uán mor pérsonal féivor: if yu jápen tu mis yor a-póintment at short nóutis, plis tekst mi at dis námber.', es: 'Por favor, hágame un favor personal más: si llega a perder su cita a última hora, escríbame a este número.' },
-      { en: "If an appointment is missed, I need to justify, because I have blocked the time and I'm personally responsible for only referring to reliable people.", pron: 'if an a-póintment is misd, ái nid tu yástifai, bikós ái jav blokd de táim and áim pérsonali res-pónsibol for óunli reféring tu re-lái-a-bol pípol.', es: 'Si se pierde una cita, tengo que justificarlo, porque he bloqueado ese tiempo y soy personalmente responsable de referir solo a personas confiables.' }
+      { en: 'Please do me one more personal favor: if you happen to miss your appointment at short notice, please text me at this number.', pron: 'plis du mi uán mor pérsonal féivor: if yu jápen tu mis yor a-póintment at short nóutis, plis tekst mi at dis námber.', es: 'Por favor, hágame un favor personal más: si llega a perder su cita a última hora, escríbame a este número.', tone: 'i_care' },
+      { en: "If an appointment is missed, I need to justify, because I have blocked the time and I'm personally responsible for only referring to reliable people.", pron: 'if an a-póintment is misd, ái nid tu yástifai, bikós ái jav blokd de táim and áim pérsonali res-pónsibol for óunli reféring tu re-lái-a-bol pípol.', es: 'Si se pierde una cita, tengo que justificarlo, porque he bloqueado ese tiempo y soy personalmente responsable de referir solo a personas confiables.', tone: 'sincerity' }
     ]}
   ]
 };
@@ -195,7 +195,7 @@ async function loadAttempts(scriptId) {
     rq.onsuccess = () => {
       const rows = rq.result.filter(r => r.scriptId === scriptId);
       resolve(rows.map((r, i) => ({
-        id: r.id, ms: r.ms, n: i + 1, date: r.date,
+        id: r.id, ms: r.ms, n: i + 1, date: r.date, feedback: r.feedback || null,
         url: r.blob ? URL.createObjectURL(r.blob) : null,
       })));
     };
@@ -203,11 +203,11 @@ async function loadAttempts(scriptId) {
   });
 }
 
-async function saveAttempt(scriptId, ms, blob) {
+async function saveAttempt(scriptId, ms, blob, feedback) {
   const db = await _openDb();
   return new Promise((resolve, reject) => {
     const rq = db.transaction(STORE, 'readwrite').objectStore(STORE).add({
-      scriptId, ms, blob, date: new Date().toLocaleDateString('es'),
+      scriptId, ms, blob, feedback: feedback || null, date: new Date().toLocaleDateString('es'),
     });
     rq.onsuccess = () => resolve(rq.result);
     rq.onerror = () => reject(rq.error);
