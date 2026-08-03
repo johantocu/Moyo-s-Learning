@@ -23,7 +23,32 @@ const INK = '#143644', ORANGE = '#17A8C4', GREEN = '#0FA089', HILITE = '#4FD4E8'
 function toneBadge(toneCode) {
   const tone = toneCode && TONES[toneCode];
   if (!tone) return null;
-  return h('span', { class: 'tone-badge', style: { background: tone.color }, title: tone.tip }, tone.es);
+  return h('span', { class: 'tone-badge', style: { background: tone.color }, title: tone.tip }, `${tone.emoji} ${tone.es}`);
+}
+
+function hexToRgba(hex, alpha) {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`;
+}
+
+// Tints the whole active sentence card with its tonalidad's color (not just
+// a small badge) so every repetition pairs the full visual field — not a
+// corner tag easy to ignore — with that emotion, reinforcing the
+// color/emoji ↔ expression association over many reps.
+function toneCardStyle(toneCode) {
+  const tone = toneCode && TONES[toneCode];
+  if (!tone) return {};
+  return {
+    background: hexToRgba(tone.color, 0.12),
+    borderColor: tone.color,
+    boxShadow: `0 10px 30px ${hexToRgba(tone.color, 0.35)}`,
+  };
+}
+
+function toneRowStyle(toneCode) {
+  const tone = toneCode && TONES[toneCode];
+  if (!tone) return {};
+  return { background: hexToRgba(tone.color, 0.14), borderRadius: '10px', padding: '8px 10px' };
 }
 
 // Main English accents to try. `hints` matches voice *names* (works across
@@ -729,6 +754,7 @@ function renderSentences(part) {
       const isClient = sn.speaker === 'client';
       const row = h('div', {
         class: 'fluid-row' + (isClient ? ' fluid-row-client' : ''),
+        style: active ? toneRowStyle(sn.tone) : null,
         onclick: () => { setState({ playAll: false }); speak(state.part, i); },
       });
       const wordsRow = h('div', { class: 'words-row words-row-big' + (isClient ? ' words-row-client' : '') });
@@ -748,8 +774,12 @@ function renderSentences(part) {
     const isClient = sn.speaker === 'client';
     const card = h('div', {
       class: 'sentence-card' + (active ? ' sentence-card-active' : ' sentence-card-dim') + (isClient ? ' sentence-card-client' : ''),
+      style: active ? toneCardStyle(sn.tone) : null,
       onclick: () => { setState({ playAll: false }); speak(state.part, i); },
     });
+    if (active && sn.tone && TONES[sn.tone]) {
+      card.appendChild(h('div', { class: 'tone-emoji-big', title: TONES[sn.tone].tip }, TONES[sn.tone].emoji));
+    }
     const wordsRow = h('div', { class: 'words-row' + (active ? '' : ' words-row-small') + (isClient ? ' words-row-client' : '') });
     sn.en.split(/\s+/).forEach((_, wi) => wordsRow.appendChild(renderWordSpan(sn, i, wi, active, done)));
     card.appendChild(wordsRow);

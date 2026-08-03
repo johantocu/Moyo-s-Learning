@@ -198,10 +198,11 @@ button { font-family: inherit; }
 .sentences { display: flex; flex-direction: column; gap: 12px; }
 
 .sentence-card {
-  cursor: pointer; border-radius: 16px; padding: 18px 20px;
+  position: relative; cursor: pointer; border-radius: 16px; padding: 18px 20px;
   background: transparent; border: 2px solid rgba(20,54,68,0.10);
   transition: background 0.25s, box-shadow 0.25s, border 0.25s, opacity 0.25s, transform 0.25s, padding 0.25s;
 }
+.tone-emoji-big { position: absolute; top: 12px; right: 16px; font-size: 34px; line-height: 1; pointer-events: none; }
 .sentence-card-active {
   background: #fff; border: 3px solid var(--orange);
   box-shadow: 0 10px 30px rgba(23,168,196,0.32);
