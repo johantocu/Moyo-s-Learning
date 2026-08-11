@@ -6,7 +6,7 @@ const DEMO_SCRIPT = {
   parts: [
     { label: '1', title: 'Apertura', sentences: [
       { en: 'How long have you already considered opening a company abroad?', pron: 'jáu long jav yu ol-rédi kon-sí-derd óu-pe-ning a kám-pa-ni a-bród?', es: '¿Hace cuánto tiempo viene considerando abrir una empresa en el extranjero?', tone: 'curiosity' },
-      { en: 'Have you already one?', pron: 'jav yu ol-rédi uán?', es: '¿Ya tiene una?' }
+      { en: 'Have you already one?', pron: 'jav yu ol-rédi uán?', es: '¿Ya tiene una?', tone: 'question' }
     ]},
     { label: '2', title: 'El negocio', sentences: [
       { en: 'What business are you in?', pron: 'uát bís-nes ar yu in?', es: '¿A qué negocio se dedica?', tone: 'curiosity' }
@@ -41,8 +41,8 @@ const DEMO_SCRIPT = {
       { en: 'And if you can benefit only half as much as most of our clients, you will be very surprised.', pron: 'and if yu kan bénefit óunli jaf as mach as móust of áur klái-ents, yu uil bi véri sor-práisd.', es: 'Y si usted se beneficia aunque sea la mitad de lo que se benefician la mayoría de nuestros clientes, quedará muy sorprendido.', tone: 'mystery' }
     ]},
     { label: '8', title: 'Calendario y WhatsApp', sentences: [
-      { en: 'Let me look at the calendar, I can book an appointment on Monday or Tuesday.', pron: 'let mi luk at de kálendar, ái kan buk an a-póintment on mándei or tiúsdei.', es: 'Déjeme ver el calendario, puedo agendar una cita el lunes o el martes.' },
-      { en: 'I confirm on WhatsApp.', pron: 'ái kon-férm on uáts-ap.', es: 'Se lo confirmo por WhatsApp.' },
+      { en: 'Let me look at the calendar, I can book an appointment on Monday or Tuesday.', pron: 'let mi luk at de kálendar, ái kan buk an a-póintment on mándei or tiúsdei.', es: 'Déjeme ver el calendario, puedo agendar una cita el lunes o el martes.', tone: 'implied' },
+      { en: 'I confirm on WhatsApp.', pron: 'ái kon-férm on uáts-ap.', es: 'Se lo confirmo por WhatsApp.', tone: 'certainty' },
       { en: 'Mr. Schwarz will contact you on WhatsApp, too, because almost everyone uses it, the phone is always available and it allows to exchange messages.', pron: 'míster shuárts uil kóntakt yu on uáts-ap tu, bikós ólmoust évri-uan yúses it, de fóun is ólueis a-véi-la-bol and it aláus tu eks-chéinch méseyes.', es: 'El señor Schwarz también lo contactará por WhatsApp, porque casi todo el mundo lo usa, el teléfono siempre está disponible y permite intercambiar mensajes.', tone: 'reasonable' }
     ]},
     { label: '9', title: 'Favor personal (cierre)', sentences: [

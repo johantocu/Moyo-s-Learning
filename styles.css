@@ -65,7 +65,8 @@ button { font-family: inherit; }
 
 .library { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 32px 20px 60px; }
 .library-header h1 { margin: 0 0 6px; font-size: 1.8rem; }
-.library-header p { margin: 0 0 28px; color: var(--muted); }
+.library-header p { margin: 0 0 20px; color: var(--muted); }
+.library-header .btn { margin: 4px 0 16px; }
 
 @media (max-width: 640px) {
   .library-page { min-height: 0; display: flex; flex-direction: column; }
@@ -107,11 +108,26 @@ button { font-family: inherit; }
 }
 .story-delete:hover { opacity: 1; }
 
+.story-tone-btn { display: block; margin-top: 12px; height: 34px; padding: 0 12px; font-size: 12px; }
+
 .story-card-new {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 6px; border-style: dashed; color: var(--orange-dark); font-weight: 600;
 }
 .story-card-plus { font-size: 2rem; line-height: 1; }
+
+.tones-page-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+.tones-page-card {
+  border: 2px solid; border-radius: var(--radius-lg); padding: 20px;
+  display: flex; flex-direction: column; gap: 8px; align-items: center; text-align: center;
+}
+.tones-page-emoji { font-size: 44px; line-height: 1; }
+.tones-page-label { font-weight: 800; font-size: 15px; color: var(--ink); }
+.tones-page-tip { font-size: 13px; color: var(--muted); }
 
 /* ---------- modal ---------- */
 
@@ -340,6 +356,27 @@ button { font-family: inherit; }
 .tone-badge {
   display: inline-block; flex-shrink: 0; font-size: 11px; font-weight: 700; color: #fff;
   border-radius: 8px; padding: 3px 9px; white-space: nowrap; letter-spacing: 0.02em;
+}
+
+.tone-banner {
+  display: flex; align-items: center; gap: 14px;
+  border: 2px solid; border-radius: var(--radius-lg);
+  padding: 14px 18px; margin: 0 2px 16px;
+  transition: background 0.4s ease, border-color 0.4s ease;
+}
+.tone-banner-emoji { font-size: 40px; line-height: 1; flex-shrink: 0; }
+.tone-banner-label { font-size: 17px; font-weight: 800; color: var(--ink); }
+.tone-banner-tip { font-size: 14px; color: var(--muted); margin-top: 2px; }
+
+.tone-side-emoji {
+  position: fixed; top: 190px; font-size: 84px; line-height: 1;
+  opacity: 0.85; pointer-events: none; z-index: 2;
+  filter: drop-shadow(0 8px 20px rgba(15,54,68,0.18));
+}
+.tone-side-emoji-left { left: 2vw; }
+.tone-side-emoji-right { right: 2vw; }
+@media (max-width: 1100px) {
+  .tone-side-emoji { display: none; }
 }
 
 .tone-legend {

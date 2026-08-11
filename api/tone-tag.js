@@ -32,9 +32,9 @@ function buildPrompt(sentences) {
 Tonalidades posibles (código: descripción):
 ${catalog}
 
-Para cada una de las siguientes frases en inglés (numeradas desde 0), elige el código de la tonalidad que más le calce. Si ninguna calza claramente (dato logístico, saludo neutro, instrucción simple), responde null para esa frase.
+Para cada una de las siguientes frases en inglés (numeradas desde 0), elige SIEMPRE el código de la tonalidad que más se acerque — incluso si la frase es logística o neutra, elige la que mejor calce o la más cercana; no hay opción de "ninguna".
 
-Responde SOLO un array JSON de strings o null, del mismo largo y en el mismo orden que las frases — sin texto adicional. Ejemplo: ["certainty", null, "urgency"]
+Responde SOLO un array JSON de strings, del mismo largo y en el mismo orden que las frases — sin texto adicional. Ejemplo: ["certainty", "reasonable", "urgency"]
 
 Frases:
 ${numbered}`;
@@ -82,7 +82,10 @@ module.exports = async function handler(req, res) {
       throw new Error('Gemini returned a mismatched array');
     }
 
-    const tones = parsed.map((code) => (VALID_CODES.has(code) ? code : null));
+    // Every sentence must end up tagged — fall back to a safe, always-
+    // applicable default rather than leaving gaps if the model ever
+    // returns something outside the known codes.
+    const tones = parsed.map((code) => (VALID_CODES.has(code) ? code : 'reasonable'));
     res.status(200).json({ tones });
   } catch (e) {
     res.status(500).json({ error: e.message });

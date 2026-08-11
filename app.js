@@ -66,7 +66,7 @@ const ACCENT_STORAGE_KEY = 'moyos-learning-accent-v1';
 // ---------- state ----------
 
 const state = {
-  view: 'library', // 'library' | 'player'
+  view: 'library', // 'library' | 'player' | 'tones'
   scripts: [DEMO_SCRIPT],
   script: null,
   part: 0, sent: 0, word: -1, playing: false, loop: false, rate: 1,
@@ -75,7 +75,7 @@ const state = {
   pop: null, fluid: false, reads: 0, pulse: false,
   testMode: false, testRunning: false, testMs: 0, recording: false, micBlocked: false,
   attempts: [], micState: 'idle', playingAtt: null, toneLegendOpen: false,
-  newStoryOpen: false, newStoryBusy: false, newStoryProgress: '',
+  newStoryOpen: false, newStoryBusy: false, newStoryProgress: '', retaggingId: null,
 };
 
 let _token = 0;
@@ -123,17 +123,8 @@ async function createStory(title, text) {
   }
 
   setState({ newStoryProgress: 'Detectando tonalidades de persuasión...' });
-  try {
-    const toneRes = await fetch('/api/tone-tag', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sentences: allSentences.map(s => s.en) }),
-    });
-    if (toneRes.ok) {
-      const { tones } = await toneRes.json();
-      allSentences.forEach((sn, i) => { if (tones[i]) sn.tone = tones[i]; });
-    }
-  } catch (e) { /* non-critical: story still saves without tone tags */ }
+  const tones = await fetchToneTags(allSentences.map(s => s.en));
+  if (tones) allSentences.forEach((sn, i) => { if (tones[i]) sn.tone = tones[i]; });
 
   try {
     await saveCustomScript(script);
@@ -156,6 +147,49 @@ async function removeStory(id, evt) {
     return;
   }
   setState({ scripts: await loadScripts() });
+}
+
+// Calls /api/tone-tag for a list of English sentences. Returns the array of
+// tone codes, or null if the call failed (caller decides how to handle it —
+// createStory treats it as non-critical, retagScript surfaces an alert).
+async function fetchToneTags(sentences) {
+  try {
+    const res = await fetch('/api/tone-tag', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sentences }),
+    });
+    if (!res.ok) return null;
+    const { tones } = await res.json();
+    return tones;
+  } catch (e) {
+    return null;
+  }
+}
+
+function scriptNeedsToneTagging(script) {
+  return script.parts.some(p => p.sentences.some(s => !s.tone));
+}
+
+async function retagScript(script, evt) {
+  evt.stopPropagation();
+  setState({ retaggingId: script.id });
+  const allSentences = script.parts.flatMap(p => p.sentences);
+  const tones = await fetchToneTags(allSentences.map(s => s.en));
+  if (!tones) {
+    setState({ retaggingId: null });
+    alert('No se pudieron detectar las tonalidades. Revisa tu conexión e intenta de nuevo.');
+    return;
+  }
+  allSentences.forEach((sn, i) => { sn.tone = tones[i] || 'reasonable'; });
+  try {
+    await saveCustomScript(script);
+  } catch (e) {
+    setState({ retaggingId: null });
+    alert('No se pudo guardar la historia en la nube. Revisa tu conexión e intenta de nuevo.');
+    return;
+  }
+  setState({ retaggingId: null, scripts: await loadScripts() });
 }
 
 // ---------- speech synthesis ----------
@@ -543,6 +577,7 @@ const root = document.getElementById('root');
 function render() {
   root.innerHTML = '';
   if (state.view === 'library') root.appendChild(renderLibrary());
+  else if (state.view === 'tones') root.appendChild(renderTonesPage());
   else root.appendChild(renderPlayer());
 }
 
@@ -554,16 +589,23 @@ function renderLibrary() {
   const wrap = h('div', { class: 'library' });
   wrap.appendChild(h('header', { class: 'library-header' },
     h('h1', {}, "🎤 Moyo's Learning"),
-    h('p', {}, 'Practica tu pronunciación en inglés al estilo karaoke.')
+    h('p', {}, 'Practica tu pronunciación en inglés al estilo karaoke.'),
+    h('button', { class: 'btn btn-secondary btn-sm', onclick: () => setState({ view: 'tones' }) }, 'ℹ️ Ver las 10 tonalidades'),
   ));
 
   const grid = h('div', { class: 'library-grid' });
   state.scripts.forEach(script => {
     const totalSentences = script.parts.reduce((a, p) => a + p.sentences.length, 0);
+    const needsTags = scriptNeedsToneTagging(script);
     const card = h('div', { class: 'story-card', onclick: () => openScript(script) },
       script.id !== 'demo' ? h('button', { class: 'story-delete', onclick: (e) => removeStory(script.id, e) }, '🗑') : null,
       h('div', { class: 'story-card-title' }, script.title),
       h('div', { class: 'story-card-meta' }, `${script.parts.length} partes · ${totalSentences} frases`),
+      needsTags ? h('button', {
+        class: 'btn btn-secondary btn-sm story-tone-btn',
+        disabled: state.retaggingId === script.id,
+        onclick: (e) => retagScript(script, e),
+      }, state.retaggingId === script.id ? '🎨 Detectando...' : '🎨 Detectar tonalidades') : null,
     );
     grid.appendChild(card);
   });
@@ -576,6 +618,34 @@ function renderLibrary() {
   wrap.appendChild(grid);
 
   if (state.newStoryOpen) wrap.appendChild(renderNewStoryModal());
+  page.appendChild(wrap);
+  return page;
+}
+
+function renderTonesPage() {
+  const page = h('div', { class: 'library-page' });
+  const wrap = h('div', { class: 'library' });
+
+  wrap.appendChild(h('header', { class: 'library-header' },
+    h('button', { class: 'btn btn-secondary btn-sm', onclick: () => setState({ view: 'library' }) }, '← Mis historias'),
+    h('h1', {}, '🎭 Las 10 tonalidades'),
+    h('p', {}, 'Cada frase de tus guiones se clasifica en una de estas — repásalas para asociar el color y el emoji con la emoción que toca transmitir.'),
+  ));
+
+  const grid = h('div', { class: 'tones-page-grid' });
+  TONE_ORDER.forEach(code => {
+    const tone = TONES[code];
+    grid.appendChild(h('div', {
+      class: 'tones-page-card',
+      style: { borderColor: tone.color, background: hexToRgba(tone.color, 0.10) },
+    },
+      h('div', { class: 'tones-page-emoji' }, tone.emoji),
+      h('div', { class: 'tones-page-label' }, tone.es),
+      h('div', { class: 'tones-page-tip' }, tone.tip),
+    ));
+  });
+  wrap.appendChild(grid);
+
   page.appendChild(wrap);
   return page;
 }
@@ -705,7 +775,18 @@ function startTestFromHeader() { _stop(); setState({ testMode: true, playing: fa
 function renderMain() {
   const script = state.script;
   const part = script.parts[state.part];
-  const main = h('main', { class: 'main' });
+  const currentSn = part.sentences[state.sent];
+  const tone = currentSn && currentSn.tone && TONES[currentSn.tone];
+
+  const main = h('main', {
+    class: 'main',
+    style: tone ? { background: hexToRgba(tone.color, 0.07) } : null,
+  });
+
+  if (tone) {
+    main.appendChild(h('div', { class: 'tone-side-emoji tone-side-emoji-left' }, tone.emoji));
+    main.appendChild(h('div', { class: 'tone-side-emoji tone-side-emoji-right' }, tone.emoji));
+  }
 
   main.appendChild(h('div', { class: 'part-nav' },
     h('button', { class: 'btn btn-secondary', onclick: () => goPart(state.part - 1) }, '⏮ Parte anterior'),
@@ -717,11 +798,20 @@ function renderMain() {
       h('div', { class: 'part-label' }, `Parte ${part.label}`),
       h('div', { class: 'part-title' }, part.title),
       h('div', { class: 'part-status' }, `Frase ${state.sent + 1} de ${part.sentences.length}${state.playAll ? ' · reproduciendo todo el guion' : ''}`),
-      toneBadge(part.sentences[state.sent] && part.sentences[state.sent].tone),
     ),
     h('button', { class: 'btn btn-secondary', onclick: () => setState({ fluid: !state.fluid }) },
       state.fluid ? '📄 Vista fluida' : '🧩 Por frases')
   ));
+
+  if (tone) {
+    main.appendChild(h('div', { class: 'tone-banner', style: { background: hexToRgba(tone.color, 0.16), borderColor: tone.color } },
+      h('div', { class: 'tone-banner-emoji' }, tone.emoji),
+      h('div', {},
+        h('div', { class: 'tone-banner-label' }, tone.es),
+        h('div', { class: 'tone-banner-tip' }, tone.tip),
+      ),
+    ));
+  }
 
   main.appendChild(renderSentences(part));
   main.appendChild(h('div', { class: 'tap-hint' }, 'Toca cualquier frase para escucharla desde ahí. Toca una palabra para su significado.'));
