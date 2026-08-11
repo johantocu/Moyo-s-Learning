@@ -71,15 +71,18 @@ module.exports = async function handler(req, res) {
         }),
       }
     );
-    if (!r.ok) throw new Error(`Gemini HTTP ${r.status}`);
+    if (!r.ok) {
+      const body = await r.text().catch(() => '');
+      throw new Error(`Gemini HTTP ${r.status}: ${body.slice(0, 500)}`);
+    }
 
     const data = await r.json();
     const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!text) throw new Error('Gemini returned no text');
+    if (!text) throw new Error('Gemini returned no text: ' + JSON.stringify(data).slice(0, 500));
 
     const parsed = JSON.parse(text);
     if (!Array.isArray(parsed) || parsed.length !== sentences.length) {
-      throw new Error('Gemini returned a mismatched array');
+      throw new Error(`Gemini returned a mismatched array (got ${Array.isArray(parsed) ? parsed.length : typeof parsed}, expected ${sentences.length})`);
     }
 
     // Every sentence must end up tagged — fall back to a safe, always-
@@ -88,6 +91,7 @@ module.exports = async function handler(req, res) {
     const tones = parsed.map((code) => (VALID_CODES.has(code) ? code : 'reasonable'));
     res.status(200).json({ tones });
   } catch (e) {
+    console.error('tone-tag failed:', e.message);
     res.status(500).json({ error: e.message });
   }
 };
